@@ -14,14 +14,14 @@ logger = Logger()
 # pip install transformers accelerate gguf torch
 
 
-model_id = "ggml-org/gemma-3-270m-GGUF" # "Qwen/Qwen3-0.6B-GGUF"
-gguf_file = "gemma-3-270m-Q8_0.gguf" # "Qwen3-0.6B-Q8_0.gguf"  # Q8 quantized variant
+model_id = "ggml-org/gemma-3-270m-GGUF"  # "Qwen/Qwen3-0.6B-GGUF"
+gguf_file = "gemma-3-270m-Q8_0.gguf"  # "Qwen3-0.6B-Q8_0.gguf"  # Q8 quantized variant
 
 # 2. Load tokenizer and model from the GGUF file
 tokenizer = AutoTokenizer.from_pretrained(model_id, gguf_file=gguf_file)
 model = AutoModelForCausalLM.from_pretrained(model_id, gguf_file=gguf_file)
 
-tokenizer.chat_template = ("""{{ bos_token }}
+tokenizer.chat_template = """{{ bos_token }}
 {%- if messages[0]['role'] == 'system' -%}
     {%- if messages[0]['content'] is string -%}
         {%- set first_user_prefix = messages[0]['content'] + '
@@ -67,18 +67,25 @@ tokenizer.chat_template = ("""{{ bos_token }}
 {%- if add_generation_prompt -%}
     {{'<start_of_turn>model
 '}}
-{%- endif -%}""")
+{%- endif -%}"""
+
 
 # 3. Run inference
-def run_inference_handler(payload: Dict[str, str | List[Dict[str, Any]]]) -> Dict[str, Any]:
+def run_inference_handler(
+    payload: Dict[str, str | List[Dict[str, Any]]],
+) -> Dict[str, Any]:
     # prompt = "Explain quantum entanglement in simple terms."
     messages = payload.get("messages", [])
 
-    text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    text = tokenizer.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True
+    )
     inputs = tokenizer(text, return_tensors="pt").to(model.device)
 
-    output = model.generate(**inputs, max_new_tokens=32000)
-    result = tokenizer.decode(output[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True)
+    output = model.generate(**inputs, max_new_tokens=256)
+    result = tokenizer.decode(
+        output[0][inputs["input_ids"].shape[-1] :], skip_special_tokens=True
+    )
 
     print(result)
 
@@ -96,7 +103,8 @@ def run_inference_handler(payload: Dict[str, str | List[Dict[str, Any]]]) -> Dic
     #     }
     # )
     # result["running_inference"] = new_result
-    return result
+    return {"content": result}
+
 
 # def add_handler(payload: dict) -> dict:
 #     a = payload.get("a", 0)
