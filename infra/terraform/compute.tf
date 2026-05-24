@@ -23,9 +23,9 @@ resource "google_compute_instance" "gateway" {
     access_config {
 
     }
-
   }
-  tags = ["gateway"]
+  metadata_startup_script = file("${path.module}/../startup/gateway.sh")
+  tags                    = ["gateway"]
 
 }
 
