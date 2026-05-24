@@ -44,8 +44,10 @@ resource "google_compute_instance" "caller-worker" {
   network_interface {
     subnetwork = google_compute_subnetwork.private.id
   }
-  tags = ["worker"]
 
+  metadata_startup_script = file("${path.module}/../startup/caller-worker.sh")
+
+  tags = ["worker"]
 }
 
 resource "google_compute_instance" "inference-worker" {
@@ -62,6 +64,8 @@ resource "google_compute_instance" "inference-worker" {
   network_interface {
     subnetwork = google_compute_subnetwork.private.id
   }
+
+  metadata_startup_script = file("${path.module}/../startup/inference-worker.sh")
 
   tags = ["worker"]
 }
